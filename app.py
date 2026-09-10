@@ -34,6 +34,12 @@ def upload_file():
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
 
+    # Server-side: allow only common Excel-like extensions
+    allowed_ext = ('.xls', '.xlsx', '.xlsm', '.xlsb', '.ods', '.csv')
+    filename_lower = file.filename.lower()
+    if not any(filename_lower.endswith(ext) for ext in allowed_ext):
+        return jsonify({'error': 'Unsupported file type. Please upload an Excel file (xls, xlsx, xlsm, xlsb, ods, csv).'}), 400
+
     try:
         file_bytes = io.BytesIO(file.read())
         excel_file = pd.ExcelFile(file_bytes, engine='openpyxl')

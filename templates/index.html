@@ -18,15 +18,43 @@
     th { background-color: var(--table-header-bg); color: var(--accent-color); font-weight: 600; }
     tr:hover { background-color: var(--table-row-hover); }
     .hidden { display: none; }
+    /* Upload / dropzone styles */
+    .dropzone { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:18px; border:2px dashed var(--border-color); border-radius:10px; cursor:pointer; background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent); }
+    .dropzone.dragover { border-color: var(--accent-color); box-shadow: 0 6px 20px -6px var(--glow-shadow); }
+    .dropzone .dz-text { color: var(--muted-text); font-size:0.95rem; }
+    .dropzone .dz-file { color: var(--text-color); font-weight:600; }
+    /* Centered progress full width */
+    #progressWrapper { display:flex; flex-direction:column; align-items:center; gap:6px; width:100%; }
+    #progressInner { width:100%; max-width:900px; }
+    #uploadProgress { height:14px; border-radius:8px; }
+    #uploadCounter { color: var(--muted-text); font-size:0.9rem; }
+    /* Percent overlay inside progress */
+    #uploadPercent { font-weight:700; color:var(--text-color); text-shadow:0 1px 2px rgba(0,0,0,0.45); pointer-events:none; }
 </style>
 
 <div class="card">
     <h3 data-i18n="uploadHeader">1. Upload Excel File</h3>
-    <div style="display: flex; gap: 12px; align-items: center; margin-top: 12px;">
-        <input type="file" id="excelFile" accept=".xlsx, .xls">
-        <button class="btn-primary" onclick="uploadFile()" data-i18n="uploadBtn">Upload & Parse</button>
+    <div style="margin-top:12px;">
+        <div id="dropzone" class="dropzone" title="Click or drop an Excel file here">
+            <div class="dz-text" data-i18n="uploadHeader">Click or drag & drop an Excel file here</div>
+            <div class="dz-text">Supported: xls, xlsx, xlsm, xlsb, ods, csv</div>
+            <div id="dzFilename" class="dz-file" style="display:none;"></div>
+        </div>
+        <input type="file" id="excelFile" accept=".xls,.xlsx,.xlsm,.xlsb,.ods,.csv" style="display:none;">
+        <div id="progressWrapper" class="hidden" style="margin-top:12px;">
+            <div id="progressInner">
+                <div style="position:relative; background:var(--btn-bg); border:1px solid var(--border-color); border-radius:8px; overflow:hidden;">
+                    <div id="uploadProgress" style="width:0%; background:var(--accent-color); transition: width 0.2s; height:14px;"></div>
+                    <div id="uploadPercent" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">0%</div>
+                </div>
+            </div>
+            <div id="uploadCounter" style="margin-top:6px;">Preparing...</div>
+            <p id="uploadStatus" style="color: var(--muted-text); margin-top: 4px; font-size: 0.9rem;"></p>
+        </div>
+        <div style="margin-top:12px;">
+            <button class="btn-primary" id="uploadBtn" onclick="uploadFile()" data-i18n="uploadBtn">Upload & Parse</button>
+        </div>
     </div>
-    <p id="uploadStatus" style="color: var(--muted-text); margin-top: 8px; font-size: 0.9rem;"></p>
 </div>
 
 <div id="searchCard" class="card hidden">
@@ -55,26 +83,114 @@
 <script>
     let availableColumns = [];
 
-    async function uploadFile() {
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function uploadFile(fileArg) {
         const fileInput = document.getElementById('excelFile');
-        if (!fileInput.files[0]) return alert('Please select a file.');
+        const file = fileArg || fileInput.files[0];
+        if (!file) return alert('Please select a file.');
+        // Client-side extension check
+        const allowed = ['xls', 'xlsx', 'xlsm', 'xlsb', 'ods', 'csv'];
+        const ext = (file.name.split('.').pop() || '').toLowerCase();
+        if (!allowed.includes(ext)) {
+            return alert('Please select an Excel file (xls, xlsx, xlsm, xlsb, ods, csv).');
+        }
 
         const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
+        formData.append('file', file);
 
-        const response = await fetch('/upload', { method: 'POST', body: formData });
-        const data = await response.json();
+        const wrapper = document.getElementById('progressWrapper');
+        const progressBar = document.getElementById('uploadProgress');
+        const status = document.getElementById('uploadStatus');
+        const counter = document.getElementById('uploadCounter');
+        const dzName = document.getElementById('dzFilename');
+        dzName.style.display = 'block';
+        dzName.innerText = `${file.name} • ${formatBytes(file.size)}`;
+        wrapper.classList.remove('hidden');
+        progressBar.style.width = '0%';
+        status.innerText = 'Uploading...';
+        counter.innerText = `0 B / ${formatBytes(file.size)} (0%)`;
 
-        if (response.ok) {
-            document.getElementById('uploadStatus').innerText = `${data.message} (${data.total_rows} records loaded)`;
-            availableColumns = data.columns;
-            document.getElementById('filterContainer').innerHTML = '';
-            addFilterRow();
-            document.getElementById('searchCard').classList.remove('hidden');
-        } else {
-            alert(data.error);
-        }
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/upload', true);
+
+        xhr.upload.onprogress = function(e) {
+            if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                progressBar.style.width = percent + '%';
+                status.innerText = `Uploading... ${percent}%`;
+                counter.innerText = `${formatBytes(e.loaded)} / ${formatBytes(e.total)} (${percent}%)`;
+                const pctEl = document.getElementById('uploadPercent');
+                if (pctEl) pctEl.innerText = percent + '%';
+            }
+        };
+
+        xhr.onload = function() {
+            try {
+                const data = JSON.parse(xhr.responseText || '{}');
+                if (xhr.status === 200) {
+                    progressBar.style.width = '100%';
+                    const pctEl = document.getElementById('uploadPercent');
+                    if (pctEl) pctEl.innerText = '100%';
+                    status.innerText = `${data.message} (${data.total_rows} records loaded)`;
+                    availableColumns = data.columns;
+                    document.getElementById('filterContainer').innerHTML = '';
+                    addFilterRow();
+                    document.getElementById('searchCard').classList.remove('hidden');
+                } else {
+                    wrapper.classList.add('hidden');
+                    alert(data.error || 'Upload failed');
+                }
+            } catch (err) {
+                wrapper.classList.add('hidden');
+                alert('Upload failed: unexpected response');
+            }
+        };
+
+        xhr.onerror = function() {
+            document.getElementById('progressWrapper').classList.add('hidden');
+            alert('Upload failed due to a network error.');
+        };
+
+        xhr.send(formData);
     }
+
+    // Drag & drop support
+    const dropzone = document.getElementById('dropzone');
+    const fileInputEl = document.getElementById('excelFile');
+
+    function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+    ['dragenter','dragover','dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, preventDefaults));
+
+    ['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, () => dropzone.classList.add('dragover')));
+    ['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, () => dropzone.classList.remove('dragover')));
+
+    dropzone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files && files[0]) {
+            fileInputEl.files = files; // populate file input
+            // perform same client-side extension check
+            const allowed = ['xls', 'xlsx', 'xlsm', 'xlsb', 'ods', 'csv'];
+            const f = files[0];
+            const ext = (f.name.split('.').pop() || '').toLowerCase();
+            if (!allowed.includes(ext)) return alert('Please drop an Excel file (xls, xlsx, xlsm, xlsb, ods, csv).');
+            uploadFile(f);
+        }
+    });
+
+    dropzone.addEventListener('click', () => fileInputEl.click());
+    fileInputEl.addEventListener('change', () => {
+        const f = fileInputEl.files[0];
+        if (!f) return;
+        uploadFile(f);
+    });
 
     function addFilterRow() {
         const container = document.getElementById('filterContainer');
