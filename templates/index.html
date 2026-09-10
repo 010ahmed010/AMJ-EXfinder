@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Excel Finder{% endblock %}
+
+{% block content %}
+<style>
+    .filter-row { display: flex; gap: 12px; margin-bottom: 12px; align-items: center; }
+    select, input { background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 6px; font-size: 0.95rem; }
+    select:focus, input:focus { outline: 2px solid var(--accent-color); }
+    
+    .btn-add { background: #10b981; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .btn-remove { background: #ef4444; color: white; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; }
+    
+    /* Expanded table styling with full width */
+    .table-wrapper { width: 100%; overflow-x: auto; border-radius: 8px; border: 1px solid var(--border-color); }
+    table { width: 100%; border-collapse: collapse; min-width: 100%; }
+    th, td { border: 1px solid var(--border-color); padding: 12px 14px; text-align: start; white-space: nowrap; }
+    th { background-color: var(--table-header-bg); color: var(--accent-color); font-weight: 600; }
+    tr:hover { background-color: var(--table-row-hover); }
+    .hidden { display: none; }
+</style>
+
+<div class="card">
+    <h3 data-i18n="uploadHeader">1. Upload Excel File</h3>
+    <div style="display: flex; gap: 12px; align-items: center; margin-top: 12px;">
+        <input type="file" id="excelFile" accept=".xlsx, .xls">
+        <button class="btn-primary" onclick="uploadFile()" data-i18n="uploadBtn">Upload & Parse</button>
+    </div>
+    <p id="uploadStatus" style="color: var(--muted-text); margin-top: 8px; font-size: 0.9rem;"></p>
+</div>
+
+<div id="searchCard" class="card hidden">
+    <h3 data-i18n="searchHeader">2. Dynamic Multi-Column Search</h3>
+    <div style="margin: 16px 0;">
+        <strong data-i18n="matchLabel">Match Criteria:</strong>
+        <label><input type="radio" name="searchMode" value="AND" checked onchange="triggerSearch()"> <span data-i18n="andMode">AND</span></label>
+        &nbsp;&nbsp;
+        <label><input type="radio" name="searchMode" value="OR" onchange="triggerSearch()"> <span data-i18n="orMode">OR</span></label>
+    </div>
+
+    <div id="filterContainer"></div>
+    <button class="btn-add" onclick="addFilterRow()" data-i18n="addColBtn">+ Add Column Field</button>
+</div>
+
+<div id="resultsCard" class="card hidden">
+    <h3 id="resultCount">Results</h3>
+    <div class="table-wrapper">
+        <table>
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let availableColumns = [];
+
+    async function uploadFile() {
+        const fileInput = document.getElementById('excelFile');
+        if (!fileInput.files[0]) return alert('Please select a file.');
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        const response = await fetch('/upload', { method: 'POST', body: formData });
+        const data = await response.json();
+
+        if (response.ok) {
+            document.getElementById('uploadStatus').innerText = `${data.message} (${data.total_rows} records loaded)`;
+            availableColumns = data.columns;
+            document.getElementById('filterContainer').innerHTML = '';
+            addFilterRow();
+            document.getElementById('searchCard').classList.remove('hidden');
+        } else {
+            alert(data.error);
+        }
+    }
+
+    function addFilterRow() {
+        const container = document.getElementById('filterContainer');
+        const row = document.createElement('div');
+        row.className = 'filter-row';
+
+        const currentLang = localStorage.getItem('lang') || 'ar';
+        const placeholderText = translations[currentLang]?.queryPlaceholder || 'Type search term...';
+
+        const options = availableColumns.map(c => `<option value="${c}">${c}</option>`).join('');
+
+        row.innerHTML = `
+            <select class="column-select" onchange="triggerSearch()">${options}</select>
+            <input type="text" class="query-input" placeholder="${placeholderText}" data-i18n-ph="queryPlaceholder" oninput="triggerSearch()">
+            <button class="btn-remove" onclick="removeFilterRow(this)">✕</button>
+        `;
+        container.appendChild(row);
+    }
+
+    function removeFilterRow(btn) {
+        const container = document.getElementById('filterContainer');
+        if (container.children.length > 1) {
+            btn.parentElement.remove();
+            triggerSearch();
+        }
+    }
+
+    async function triggerSearch() {
+        const rows = document.querySelectorAll('.filter-row');
+        const filters = [];
+
+        rows.forEach(r => {
+            const col = r.querySelector('.column-select').value;
+            const query = r.querySelector('.query-input').value;
+            if (query.trim()) filters.push({ column: col, query: query });
+        });
+
+        if (filters.length === 0) {
+            document.getElementById('resultsCard').classList.add('hidden');
+            return;
+        }
+
+        const mode = document.querySelector('input[name="searchMode"]:checked').value;
+        const response = await fetch('/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json; charset=utf-8' },
+            body: JSON.stringify({ filters, mode })
+        });
+
+        const data = await response.json();
+        if (response.ok) renderTable(data.columns, data.results);
+    }
+
+    function renderTable(cols, results) {
+        const card = document.getElementById('resultsCard');
+        const head = document.getElementById('tableHead');
+        const body = document.getElementById('tableBody');
+        
+        const currentLang = localStorage.getItem('lang') || 'ar';
+        const titleText = translations[currentLang]?.resultsHeader || 'Search Results';
+        
+        document.getElementById('resultCount').innerText = `${titleText} (${results.length})`;
+
+        if (results.length === 0) {
+            card.classList.add('hidden');
+            return;
+        }
+
+        head.innerHTML = `<tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>`;
+        body.innerHTML = results.map(row => `<tr>${cols.map(c => `<td>${row[c]}</td>`).join('')}</tr>`).join('');
+        card.classList.remove('hidden');
+    }
+</script>
+{% endblock %}

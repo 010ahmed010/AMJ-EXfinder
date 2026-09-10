@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}User Guide - Excel Finder{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2 data-i18n="guideTitle">📖 How to Use Excel Finder</h2>
+    <p style="color: var(--muted-text);" data-i18n="guideDesc">Follow these steps to search your Excel datasets efficiently.</p>
+
+    <div style="display: grid; gap: 20px; margin-top: 24px;">
+        <div style="border-inline-start: 3px solid var(--accent-color); padding-inline-start: 16px;">
+            <h4 data-i18n="step1Title">Step 1: File Upload</h4>
+            <p data-i18n="step1Desc">Upload any .xlsx or .xls file. The app automatically scans sheets, detects tables, and ignores empty columns.</p>
+        </div>
+
+        <div style="border-inline-start: 3px solid var(--accent-color); padding-inline-start: 16px;">
+            <h4 data-i18n="step2Title">Step 2: Multi-Column Search</h4>
+            <p data-i18n="step2Desc">Add fields to search across multiple columns simultaneously (e.g., First Name + Father Name + Surname).</p>
+        </div>
+
+        <div style="border-inline-start: 3px solid var(--accent-color); padding-inline-start: 16px;">
+            <h4 data-i18n="step3Title">Step 3: Matching Logic Options</h4>
+            <ul>
+                <li data-i18n="andDesc">AND Mode: Returns records satisfying all conditions.</li>
+                <li data-i18n="orDesc">OR Mode: Returns records satisfying any single condition.</li>
+            </ul>
+        </div>
+
+        <div style="border-inline-start: 3px solid var(--accent-color); padding-inline-start: 16px;">
+            <h4 data-i18n="step4Title">Step 4: Arabic Normalization</h4>
+            <p data-i18n="step4Desc">Arabic character variations are automatically normalized during searches for accurate results.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

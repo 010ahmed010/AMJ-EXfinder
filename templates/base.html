@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AMJ-EXfinder{% endblock %}</title>
+    <style>
+        :root[data-theme="dark"] {
+            --bg-color: #0b0e14;
+            --card-bg: #161f2e;
+            --navbar-bg: rgba(22, 31, 46, 0.85);
+            --text-color: #f8fafc;
+            --muted-text: #94a3b8;
+            --border-color: #273549;
+            --accent-color: #38bdf8;
+            --accent-hover: #0284c7;
+            --btn-bg: #1e293b;
+            --table-header-bg: #1e293b;
+            --table-row-hover: #161f2e;
+            --glow-shadow: rgba(56, 189, 248, 0.15);
+        }
+
+        :root[data-theme="light"] {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --navbar-bg: rgba(255, 255, 255, 0.85);
+            --text-color: #0f172a;
+            --muted-text: #64748b;
+            --border-color: #e2e8f0;
+            --accent-color: #0284c7;
+            --accent-hover: #0369a1;
+            --btn-bg: #f1f5f9;
+            --table-header-bg: #f1f5f9;
+            --table-row-hover: #f8fafc;
+            --glow-shadow: rgba(2, 132, 199, 0.12);
+        }
+
+        * { 
+            box-sizing: border-box; 
+            transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease; 
+        }
+
+        body { 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            min-height: 100vh;
+        }
+
+        /* Glassmorphic Header Navigation */
+        .navbar { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 14px 32px; 
+            background: var(--navbar-bg); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color); 
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .brand-container {
+            text-decoration: none;
+        }
+
+        .brand-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .brand-title span.accent {
+            color: var(--accent-color);
+        }
+
+        .nav-links { 
+            display: flex; 
+            gap: 20px; 
+            align-items: center; 
+        }
+
+        .nav-link { 
+            color: var(--muted-text); 
+            text-decoration: none; 
+            font-weight: 500; 
+            font-size: 0.92rem;
+            padding: 6px 12px;
+            border-radius: 6px;
+        }
+
+        .nav-link:hover, .nav-link.active { 
+            color: var(--accent-color); 
+            background-color: var(--btn-bg);
+        }
+
+        .actions-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .action-btn { 
+            background: var(--btn-bg); 
+            border: 1px solid var(--border-color); 
+            color: var(--text-color); 
+            padding: 7px 14px; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            font-size: 0.85rem; 
+            font-weight: 600; 
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .action-btn:hover { 
+            border-color: var(--accent-color); 
+            color: var(--accent-color);
+            box-shadow: 0 0 10px var(--glow-shadow);
+        }
+
+        .container-fluid { 
+            width: 96%; 
+            max-width: 1800px; 
+            margin: 28px auto; 
+        }
+
+        .card { 
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            padding: 24px; 
+            border-radius: 12px; 
+            margin-bottom: 24px; 
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.2); 
+        }
+
+        button.btn-primary { 
+            background-color: var(--accent-color); 
+            color: #fff; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: 600; 
+        }
+
+        button.btn-primary:hover { 
+            background-color: var(--accent-hover); 
+        }
+    </style>
+</head>
+<body>
+
+    <header class="navbar">
+        <a href="/" class="brand-container">
+            <div class="brand-title">
+                <span>AMJ</span><span class="accent">EXfinder</span>
+            </div>
+        </a>
+
+        <div class="nav-links">
+            <a href="/" class="nav-link active" data-i18n="navSearch">أداة البحث</a>
+            <a href="/guide" class="nav-link" data-i18n="navGuide">دليل الاستخدام</a>
+            
+            <div class="actions-group">
+                <button class="action-btn" onclick="toggleLanguage()" id="langBtn">🌐 English</button>
+                <button class="action-btn" onclick="toggleTheme()" id="themeBtn">🌙 Dark Mode</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container-fluid">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        const translations = {
+            ar: {
+                navSearch: "أداة البحث",
+                navGuide: "دليل الاستخدام",
+                uploadHeader: "1. رفع ملف إكسل",
+                uploadBtn: "رفع وتحليل",
+                uploadPlaceholder: "لم يتم اختيار ملف",
+                searchHeader: "2. البحث متعدد الأعمدة",
+                matchLabel: "معيار المطابقة:",
+                andMode: "AND (مطابقة جميع الشروط)",
+                orMode: "OR (مطابقة أي شرط)",
+                addColBtn: "+ إضافة حقل للبحث",
+                queryPlaceholder: "اكتب كلمة البحث...",
+                resultsHeader: "نتائج البحث",
+                guideTitle: "📖 كيفية استخدام Excel Finder",
+                guideDesc: "اتبع هذه الخطوات لبحث البيانات بسهولة ودقة عالية.",
+                step1Title: "الخطوة 1: رفع الملف",
+                step1Desc: "قم برفع ملف .xlsx أو .xls. يقوم البرنامج تلقائياً بفحص الأوراق وتحديد البيانات وتجاهل الأعمدة الفارغة.",
+                step2Title: "الخطوة 2: البحث متعدد الأعمدة",
+                step2Desc: "أضف عدة حقول للبحث في أكثر من عمود في وقت واحد (مثل: الاسم + اسم الأب + الكنية).",
+                step3Title: "الخطوة 3: خيارات المنطق (AND / OR)",
+                andDesc: "وضع AND: يعرض النتائج التي تحقق جميع الشروط المكتوبة.",
+                orDesc: "وضع OR: يعرض النتائج التي تحقق أي شرط من الشروط.",
+                step4Title: "الخطوة 4: مطابقة الأحرف العربية",
+                step4Desc: "يتم توحيد الأحرف العربية تلقائياً (مثل أ/إ/آ مع ا، و ة مع هـ) لضمان الوصول لكافة النتائج."
+            },
+            en: {
+                navSearch: "Search Tool",
+                navGuide: "User Guide",
+                uploadHeader: "1. Upload Excel File",
+                uploadBtn: "Upload & Parse",
+                uploadPlaceholder: "No file selected",
+                searchHeader: "2. Dynamic Multi-Column Search",
+                matchLabel: "Match Criteria:",
+                andMode: "AND (All Criteria Match)",
+                orMode: "OR (Any Criterion Matches)",
+                addColBtn: "+ Add Search Column",
+                queryPlaceholder: "Type search term...",
+                resultsHeader: "Search Results",
+                guideTitle: "📖 How to Use Excel Finder",
+                guideDesc: "Follow these steps to search your Excel datasets efficiently.",
+                step1Title: "Step 1: Upload Excel File",
+                step1Desc: "Upload any .xlsx or .xls file. The app automatically scans sheets, detects tables, and ignores empty columns.",
+                step2Title: "Step 2: Multi-Column Search",
+                step2Desc: "Add fields to search across multiple columns simultaneously (e.g., First Name + Father Name + Surname).",
+                step3Title: "Step 3: Matching Logic Options",
+                andDesc: "AND Mode: Returns records satisfying all conditions.",
+                orDesc: "OR Mode: Returns records satisfying any single condition.",
+                step4Title: "Step 4: Arabic Normalization",
+                step4Desc: "Arabic character variations are automatically normalized during searches for accurate results."
+            }
+        };
+
+        function applyLanguage(lang) {
+            document.documentElement.setAttribute('lang', lang);
+            document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+            document.getElementById('langBtn').innerText = lang === 'ar' ? '🌐 English' : '🌐 العربية';
+            
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang] && translations[lang][key]) {
+                    el.innerText = translations[lang][key];
+                }
+            });
+
+            document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+                const key = el.getAttribute('data-i18n-ph');
+                if (translations[lang] && translations[lang][key]) {
+                    el.placeholder = translations[lang][key];
+                }
+            });
+
+            localStorage.setItem('lang', lang);
+        }
+
+        function toggleLanguage() {
+            const currentLang = localStorage.getItem('lang') || 'ar';
+            const newLang = currentLang === 'ar' ? 'en' : 'ar';
+            applyLanguage(newLang);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            document.getElementById('themeBtn').innerText = newTheme === 'dark' ? '🌙 Dark Mode' : '☀️ Light Mode';
+            localStorage.setItem('theme', newTheme);
+        }
+
+        function updateActiveNavLink() {
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.nav-link').forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+        }
+
+        // Initialize saved settings
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.getElementById('themeBtn').innerText = savedTheme === 'dark' ? '🌙 Dark Mode' : '☀️ Light Mode';
+
+        const savedLang = localStorage.getItem('lang') || 'ar';
+        applyLanguage(savedLang);
+        updateActiveNavLink();
+    </script>
+</body>
+</html>
