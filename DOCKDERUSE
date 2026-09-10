@@ -1,0 +1,59 @@
+====================================================================
+           DOCKER WORKFLOW GUIDE FOR AMJ-EXFINDER
+====================================================================
+
+1. DOCKER CONCEPTS OVERVIEW
+--------------------------------------------------------------------
+• Dockerfile : A text blueprint containing instructions on how to build
+               your application environment (Python version, system 
+               libraries, and application files).
+• Docker Image: The compiled, read-only package generated from your 
+               Dockerfile. Think of it as a template or snapshot.
+• Container   : A live, running instance of your Docker Image operating 
+               in an isolated environment.
+
+
+2. STEP-BY-STEP COMMAND WORKFLOW
+--------------------------------------------------------------------
+
+Step 1: Navigate to Project Directory
+Ensure terminal is opened where 'Dockerfile' and 'app.py' exist.
+$ cd /path/to/AMJ-EXfinder
+
+Step 2: Build the Docker Image
+Creates an image named 'amj-exfinder' tagged as 'latest'.
+$ docker build -t amj-exfinder:latest .
+
+Step 3: Run the Container from the Image
+Starts the container in background mode (-d), mapping port 5000 of your 
+host machine to port 5000 inside the container.
+$ docker run -d -p 5000:5000 --name amj_exfinder_app amj-exfinder:latest
+
+Step 4: Verify Application Status
+Access your browser at http://localhost:5000 or run:
+$ docker ps
+
+
+3. USEFUL CONTAINER MANAGEMENT COMMANDS
+--------------------------------------------------------------------
+• View Application Logs (Stream live logs):
+  $ docker logs -f amj_exfinder_app
+
+• Stop the Running Container:
+  $ docker stop amj_exfinder_app
+
+• Start a Stopped Container:
+  $ docker start amj_exfinder_app
+
+• Restart the Container:
+  $ docker restart amj_exfinder_app
+
+• Access Container Terminal (Inside Debian/Linux environment):
+  $ docker exec -it amj_exfinder_app /bin/bash
+
+• Remove Container Completely:
+  $ docker rm -f amj_exfinder_app
+
+• Remove Built Image:
+  $ docker rmi amj-exfinder:latest
+====================================================================
