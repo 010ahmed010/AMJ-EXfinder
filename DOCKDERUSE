@@ -57,3 +57,21 @@ $ docker ps
 • Remove Built Image:
   $ docker rmi amj-exfinder:latest
 ====================================================================
+
+  RESTART POLICIES (auto-restart if the container stops/crashes)
+  --------------------------------------------------------------------
+  When running the container you can pass a `--restart` policy so Docker will
+  automatically attempt to restart the container on failure or when the daemon
+  restarts. Common choices:
+
+  - Always restart unless explicitly stopped (recommended for services):
+    $ docker run -d -p 5000:5000 --name amj_exfinder_app --restart unless-stopped amj-exfinder:latest
+
+  - Restart only on failures and limit retries (example: 5 retries):
+    $ docker run -d -p 5000:5000 --name amj_exfinder_app --restart on-failure:5 amj-exfinder:latest
+
+  - Always keep running (even after Docker daemon restart):
+    $ docker run -d -p 5000:5000 --name amj_exfinder_app --restart always amj-exfinder:latest
+
+  Choose `unless-stopped` or `always` for long-running services. Use `on-failure` when
+  you want Docker to retry only when the process exits with a non-zero code.
